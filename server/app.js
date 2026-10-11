@@ -12,7 +12,10 @@ function createApp(db) {
   const requireAuth = auth.requireAuth(db);
 
 
-
+// Auth routes
+  router.post('/login', auth.login(db));
+  router.post('/logout', requireAuth, auth.logout(db));
+  router.get('/me', requireAuth, auth.me(db));
 
 
   app.use(errorHandler);
