@@ -1,8 +1,8 @@
-app.use (async (ctx, next)) {
+app.use(async (ctx, next) => {
     try {
         await next();
     } catch (err) {
-        if (err.status {
+        if (err.status) {
             ctx.status = err.status;
             ctx.body = { error: err.code, message: err.message };
         } else {
@@ -11,4 +11,4 @@ app.use (async (ctx, next)) {
             ctx.body = { error: 'INTERNAL_SERVER_ERROR', message: 'An unexpected error occurred.' };
         }
     }
-}
+});
