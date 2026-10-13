@@ -1,6 +1,6 @@
 const { badRequest } = require('./errors');
 
-
+// Validates that the given value is a non-empty string. Throws a badRequest error if not.
 function requireString(value, fieldName) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw badRequest('INVALID_STRING', `The field "${fieldName}" must be a non-empty string.`);
@@ -8,6 +8,7 @@ function requireString(value, fieldName) {
   return value;
 }
 
+// Validates that the given value is a positive integer. Throws a badRequest error if not.
 function requireObjectBody(ctx) {
   if (typeof ctx.request.body !== 'object' || ctx.request.body === null) {
     throw badRequest('INVALID_BODY', 'The request body must be a JSON object.');
@@ -16,7 +17,7 @@ function requireObjectBody(ctx) {
     return ctx.request.body;
 }
 
-
+// Validates that the given value is a positive integer. Throws a badRequest error if not.
 function requireCourseId(value) {
   const id = Number(value)
     if (!Number.isInteger(id) || id <= 0) {

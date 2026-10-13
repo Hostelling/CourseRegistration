@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../auth.jsx';
 import CourseList from '../components/CourseList.jsx';
-import CourseDetails from '../components/CourseDetails.jsx';
+import CourseDetails from '../components/CourseDetail.jsx';
 import Schedule from '../components/Schedule.jsx';
 
 export default function RegistrationPage() {

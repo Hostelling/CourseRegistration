@@ -18,20 +18,22 @@ async function errorHandler(ctx, next) {
   }
 }
 
-
+// Creates an error for unauthenticated access.
 function unauthenticated(message = 'You must be logged in.') {
   return createError(401, 'UNAUTHENTICATED', message);
 }
 
-
+// Creates an error for bad requests.
 function badRequest(code, message) {
   return createError(400, code, message);
 }
 
+// Creates an error for not found resources.
 function notFound(code, message) {
   return createError(404, code, message);
 }
 
+// Creates an error for conflict resources.
 function conflict(code, message) {
   return createError(409, code, message);
 }

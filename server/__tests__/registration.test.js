@@ -44,11 +44,11 @@ const statusOf = (userId, courseId) =>
     ?.status;
 
 // Asserts the registration is refused with the given error and adds no row.
-function expectRefused(userId, courseId, { status, code }) {
+function expectRefused(userId, courseTitle, { status, code }) {
   const before = enrollmentCount();
   let error;
   try {
-    register(db, userId, courseId);
+    register(db, userId, courseTitle);
   } catch (err) {
     error = err;
   }
@@ -100,21 +100,21 @@ describe('refused registrations', () => {
   });
 
   test('a course that does not exist is refused', () => {
-    expectRefused(student, 999, { status: 400, code: 'COURSE_NOT_FOUND' });
+    expectRefused(student, 'Missing course', { status: 404, code: 'COURSE_NOT_FOUND' });
   });
 
   test('the student cannot register for the same course twice', () => {
     const algebra = addCourse('Algebra');
     addEnrollment(student, algebra, 'enrolled');
 
-    expectRefused(student, algebra, { status: 400, code: 'ALREADY_REGISTERED' });
+    expectRefused(student, 'Algebra', { status: 400, code: 'ALREADY_REGISTERED' });
   });
 
   test('a full course is refused', () => {
     const algebra = addCourse('Algebra', { capacity: 1 });
     addEnrollment(other, algebra, 'enrolled');
 
-    expectRefused(student, algebra, { status: 400, code: 'COURSE_FULL' });
+    expectRefused(student, 'Algebra', { status: 400, code: 'COURSE_FULL' });
   });
 
   test('the student cannot enroll in more than five courses', () => {
@@ -125,7 +125,7 @@ describe('refused registrations', () => {
     }
     const additionalCourse = addCourse('Additional course', { day: 6, start: '14:00' });
 
-    expectRefused(student, additionalCourse, { status: 400, code: 'MAX_COURSES_REACHED' });
+    expectRefused(student, 'Additional course', { status: 400, code: 'MAX_COURSES_REACHED' });
   });
 
   test('a course at the same time on the same day is refused', () => {
@@ -133,14 +133,14 @@ describe('refused registrations', () => {
     const biology = addCourse('Biology', { day: MON, start: '09:00' });
     addEnrollment(student, algebra, 'enrolled');
 
-    expectRefused(student, biology, { status: 400, code: 'TIME_CONFLICT' });
+    expectRefused(student, 'Biology', { status: 400, code: 'TIME_CONFLICT' });
   });
 
   test('a course with an uncompleted prerequisite is refused', () => {
     const prerequisite = addCourse('Intro to Programming');
     const algorithms = addCourse('Algorithms', { prerequisites: [prerequisite] });
 
-    expectRefused(student, algorithms, { status: 400, code: 'PREREQUISITE_NOT_MET' });
+    expectRefused(student, 'Algorithms', { status: 400, code: 'PREREQUISITE_NOT_MET' });
   });
 
   test('a course is allowed when its prerequisite is completed', () => {
@@ -148,7 +148,7 @@ describe('refused registrations', () => {
     const algorithms = addCourse('Algorithms', { prerequisites: [prerequisite] });
     addEnrollment(student, prerequisite, 'completed');
 
-    register(db, student, algorithms);
+    register(db, student, 'Algorithms');
 
     expect(statusOf(student, algorithms)).toBe('enrolled');
   });
@@ -158,9 +158,9 @@ describe('successful registrations and drops', () => {
   test('a course at the same time on a different day is allowed', () => {
     const algebra = addCourse('Algebra', { day: MON, start: '09:00' });
     const biology = addCourse('Biology', { day: TUE, start: '09:00' });
-    register(db, student, algebra);
+    register(db, student, 'Algebra');
 
-    register(db, student, biology);
+    register(db, student, 'Biology');
 
     expect(statusOf(student, biology)).toBe('enrolled');
   });
@@ -168,9 +168,9 @@ describe('successful registrations and drops', () => {
   test('a course at a different time on the same day is allowed', () => {
     const algebra = addCourse('Algebra', { day: MON, start: '09:00' });
     const biology = addCourse('Biology', { day: MON, start: '10:00' });
-    register(db, student, algebra);
+    register(db, student, 'Algebra');
 
-    register(db, student, biology);
+    register(db, student, 'Biology');
 
     expect(statusOf(student, biology)).toBe('enrolled');
   });
