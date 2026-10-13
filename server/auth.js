@@ -1,7 +1,8 @@
 const crypto = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const { unauthenticated } = require('./errors');
-
+const {badRequest, unathenticated } = require('./errors');
+const { requireObjectBody, requireString} = require('./validation');
 const SESSION_COOKIE = 'sid';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -50,7 +51,6 @@ function clearSessionCookie(ctx) {
   ctx.cookies.set(SESSION_COOKIE, null, { httpOnly: true, sameSite: 'lax' });
 }
 
-// Middleware: refuses the request with 401 unless the cookie names a live
 // session. On success the student is available as ctx.state.user.
 function requireAuth(db) {
   return async function requireAuthMiddleware(ctx, next) {
@@ -76,6 +76,22 @@ function requireAuth(db) {
   };
 }
 
+//login is how you get a token. 
+function login(db) {
+  return async function loginHandler(ctx) {
+    const body = requireObjectBody(ctx);
+    const email = requireString(body.email, 'email');
+    const password = requireString(body.password, 'password');
+
+    const user = await verifyCredentials(db, email, password);
+    if (!user) throw unauthenticated('Invalid email or password.');
+
+    const token = createSession(db, user.id);
+    setSessionCookie(ctx, token);
+    ctx.body = { id: user.id, name: user.name, email: user.email };
+  }
+}
+
 module.exports = {
   SESSION_COOKIE,
   verifyCredentials,
@@ -84,4 +100,5 @@ module.exports = {
   setSessionCookie,
   clearSessionCookie,
   requireAuth,
+  login,
 };

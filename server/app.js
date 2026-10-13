@@ -12,10 +12,8 @@ function createApp(db) {
   const requireAuth = auth.requireAuth(db);
 
 
-// Auth routes
-  router.post('/login', auth.login(db));
-  router.post('/logout', requireAuth, auth.logout(db));
-  router.get('/me', requireAuth, auth.me(db));
+// Creating a route that allows you to create a new user, everyone can access this.
+router.post('/login', auth.login(db));
 
 
   app.use(errorHandler);

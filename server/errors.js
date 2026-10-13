@@ -28,4 +28,9 @@ function badRequest(code, message) {
   return createError(400, code, message);
 }
 
+function notFound(message = 'The requested resource was not found.') {
+  return createError(404, 'NOT_FOUND', message);
+}
+
+
 module.exports = { errorHandler, badRequest, unauthenticated };

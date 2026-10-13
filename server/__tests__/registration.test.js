@@ -59,6 +59,21 @@ function expectRefused(userId, courseId, { status, code }) {
   return error;
 }
 
+function expectDropRefused(userId, courseId, { status, code }) {
+  const before = enrollmentCount();
+  let error;
+  try {
+    drop(db, userId, courseId);
+  } catch (err) {
+    error = err;
+  }
+  expect(error).toBeDefined();
+  expect(error.code).toBe(code);
+  expect(error.status).toBe(status);
+  expect(enrollmentCount()).toBe(before);
+  return error;
+}
+
 beforeEach(() => {
   db = openDatabase(':memory:');
   student = addUser('student');
@@ -84,8 +99,63 @@ describe('refused registrations', () => {
     expect(enrollmentCount()).toBe(before);
   });
 
+  test('a course that does not exist is refused', () => {
+    expectRefused(student, 999, { status: 400, code: 'COURSE_NOT_FOUND' });
+  });
 
-  test('a course at the same time on a different day', () => {
+  test('the student cannot register for the same course twice', () => {
+    const algebra = addCourse('Algebra');
+    addEnrollment(student, algebra, 'enrolled');
+
+    expectRefused(student, algebra, { status: 400, code: 'ALREADY_REGISTERED' });
+  });
+
+  test('a full course is refused', () => {
+    const algebra = addCourse('Algebra', { capacity: 1 });
+    addEnrollment(other, algebra, 'enrolled');
+
+    expectRefused(student, algebra, { status: 400, code: 'COURSE_FULL' });
+  });
+
+  test('the student cannot enroll in more than five courses', () => {
+    for (let index = 0; index < 5; index += 1) {
+      const start = `${String(index + 8).padStart(2, '0')}:00`;
+      const course = addCourse(`Course ${index}`, { day: index + 1, start });
+      addEnrollment(student, course, 'enrolled');
+    }
+    const additionalCourse = addCourse('Additional course', { day: 6, start: '14:00' });
+
+    expectRefused(student, additionalCourse, { status: 400, code: 'MAX_COURSES_REACHED' });
+  });
+
+  test('a course at the same time on the same day is refused', () => {
+    const algebra = addCourse('Algebra', { day: MON, start: '09:00' });
+    const biology = addCourse('Biology', { day: MON, start: '09:00' });
+    addEnrollment(student, algebra, 'enrolled');
+
+    expectRefused(student, biology, { status: 400, code: 'TIME_CONFLICT' });
+  });
+
+  test('a course with an uncompleted prerequisite is refused', () => {
+    const prerequisite = addCourse('Intro to Programming');
+    const algorithms = addCourse('Algorithms', { prerequisites: [prerequisite] });
+
+    expectRefused(student, algorithms, { status: 400, code: 'PREREQUISITE_NOT_MET' });
+  });
+
+  test('a course is allowed when its prerequisite is completed', () => {
+    const prerequisite = addCourse('Intro to Programming');
+    const algorithms = addCourse('Algorithms', { prerequisites: [prerequisite] });
+    addEnrollment(student, prerequisite, 'completed');
+
+    register(db, student, algorithms);
+
+    expect(statusOf(student, algorithms)).toBe('enrolled');
+  });
+});
+
+describe('successful registrations and drops', () => {
+  test('a course at the same time on a different day is allowed', () => {
     const algebra = addCourse('Algebra', { day: MON, start: '09:00' });
     const biology = addCourse('Biology', { day: TUE, start: '09:00' });
     register(db, student, algebra);
@@ -93,6 +163,31 @@ describe('refused registrations', () => {
     register(db, student, biology);
 
     expect(statusOf(student, biology)).toBe('enrolled');
+  });
+
+  test('a course at a different time on the same day is allowed', () => {
+    const algebra = addCourse('Algebra', { day: MON, start: '09:00' });
+    const biology = addCourse('Biology', { day: MON, start: '10:00' });
+    register(db, student, algebra);
+
+    register(db, student, biology);
+
+    expect(statusOf(student, biology)).toBe('enrolled');
+  });
+
+  test('dropping an enrolled course removes the enrollment', () => {
+    const algebra = addCourse('Algebra');
+    addEnrollment(student, algebra, 'enrolled');
+
+    drop(db, student, algebra);
+
+    expect(statusOf(student, algebra)).toBeUndefined();
+  });
+
+  test('dropping a course the student is not registered for is refused', () => {
+    const algebra = addCourse('Algebra');
+
+    expectDropRefused(student, algebra, { status: 400, code: 'NOT_REGISTERED' });
   });
 
 });
