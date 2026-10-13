@@ -1,4 +1,4 @@
-const {  } = requre('./errors');
+const {  } = require('./errors');
 
 function register(db, userUd, courseId) {
     // 1. Look up the course in the database to ensure it exists.
