@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { apiFetch } from './api.js';
 
 const AuthContext = createContext(null);
 
@@ -13,21 +14,17 @@ export function AuthProvider({ children }) {
     setError(null);
 
     try {
-      const response = await fetch('/api/me', {
-        credentials: 'include',
-      });
-
-      if (response.status === 401) {
-        setUser(null);
-      } else if (!response.ok) {
-        throw new Error('Could not check your login session.');
-      } else {
-        const data = await response.json();
-        setUser(data.user);
-      }
-
+      const data = await apiFetch('/api/me');
+      setUser(data.user);
       setStatus('ready');
     } catch (err) {
+      // A 401 means the visitor is logged out, not that the app failed.
+      if (err.status === 401) {
+        setUser(null);
+        setStatus('ready');
+        return;
+      }
+
       setError(err.message);
       setStatus('error');
     }
@@ -42,7 +39,6 @@ export function AuthProvider({ children }) {
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
       body: JSON.stringify({ email, password }),
     });
 
@@ -52,11 +48,11 @@ export function AuthProvider({ children }) {
       throw new Error(data.message || 'Login failed.');
     }
 
-    setUser(data); // Your current server returns { id, name, email } directly.
+    setUser(data);
   }
 
   async function logout() {
-    // Call the server's logout endpoint here once it is implemented.
+    await apiFetch('/api/logout', { method: 'POST' });
     setUser(null);
   }
 
