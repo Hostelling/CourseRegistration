@@ -19,4 +19,6 @@ function openDatabase(filename = process.env.DB_PATH || DEFAULT_DB_PATH) {
   return db;
 }
 
-module.exports = { openDatabase, DEFAULT_DB_PATH };
+module.exports = { openDatabase, 
+  DEFAULT_DB_PATH 
+};

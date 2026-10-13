@@ -17,6 +17,7 @@ async function verifyCredentials(db, email, password) {
   return user && matches ? { id: user.id, name: user.name, email: user.email } : null;
 }
 
+// Creates a new session for the user, deleting any expired sessions first. Returns the new session token.
 function createSession(db, userId) {
   const token = crypto.randomBytes(32).toString('base64url');
   db.prepare('DELETE FROM sessions WHERE expires_at <= ?').run(Date.now());
@@ -28,10 +29,14 @@ function createSession(db, userId) {
   return token;
 }
 
+
+// Deletes the session with the given token, if it exists. Does nothing if the token is unknown.
 function destroySession(db, token) {
   db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(hashToken(token));
 }
 
+
+// Sets a cookie with the session token. The cookie is HTTP-only, secure if the request is secure, and expires in 7 days.
 function setSessionCookie(ctx, token) {
   ctx.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
