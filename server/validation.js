@@ -1,3 +1,6 @@
+const { badRequest } = require('./errors');
+
+
 function requireString(value, fieldName) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw badRequest('INVALID_STRING', `The field "${fieldName}" must be a non-empty string.`);
