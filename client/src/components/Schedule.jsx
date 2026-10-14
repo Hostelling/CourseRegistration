@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api.js';
+const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-export default function Schedule({dataKey}) {
+
+export default function Schedule({dataKey, onChange}) {
     const [schedule, setSchedule] = useState([]);
     const [error, setError] = useState(null);
 
@@ -20,6 +22,20 @@ export default function Schedule({dataKey}) {
     fetchSchedule();
   }, [dataKey])
 
+    async function handleUnregister(courseId) {
+        setError(null);
+
+        try {
+            await apiFetch(`/api/enrollments/${courseId}`, {
+                method: 'DELETE',
+            });
+
+            onChange();
+        } catch (err) {
+            setError(err.message);
+        }
+    }
+
     return (
   <div className="schedule">
     {error && <p className="error" role="alert">{error}</p>}
@@ -32,7 +48,12 @@ export default function Schedule({dataKey}) {
           <li key={course.id}>
             <h3>{course.title}</h3>
             <p>{course.description}</p>
-          </li>
+
+            <p>Day of the Week: {weekdays[course.day_of_week]}</p>
+            <button
+  type="button"
+  onClick={() => handleUnregister(course.id)}>Unregister</button>
+        </li>
         ))}
       </ul>
     )}

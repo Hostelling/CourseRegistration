@@ -41,7 +41,15 @@ router.get('/courses/:id', requireAuth, async (ctx) => {
     throw notFound('COURSE_NOT_FOUND', `Course with ID ${courseId} does not exist.`);
   }
 
-  ctx.body = { course };
+  const prerequisites = db.prepare(`
+    SELECT prerequisite.title
+    FROM prerequisites p
+    JOIN courses prerequisite ON prerequisite.id = p.prerequisite_id
+    WHERE p.course_id = ?
+    ORDER BY prerequisite.title
+  `).all(courseId).map((row) => row.title);
+
+  ctx.body = { course: { ...course, prerequisites } };
 });
 
 //Register for a course.
@@ -71,7 +79,6 @@ router.delete('/enrollments/:courseId', requireAuth, async (ctx) => {
   registration.drop(db, ctx.state.user.id, courseId);
   ctx.body = { message: `User with ID ${ctx.state.user.id} successfully dropped course with ID ${courseId}.` };
 });
-
 
   app.use(errorHandler);
   app.use(
