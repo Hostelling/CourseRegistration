@@ -1,41 +1,57 @@
-const { badRequest, notFound, conflict} = require('./errors');
+const { badRequest, notFound } = require('./errors');
 
 function register(db, userId, courseTitle) {
+  const registration = db.transaction(() => {
     // 1. Look up the course in the database to ensure it exists.
     const course = db.prepare('SELECT * FROM courses WHERE title = ?').get(courseTitle);
     if (!course) {
-        throw notFound('COURSE_NOT_FOUND', `Course with title "${courseTitle}" does not exist.`);
+      throw notFound('COURSE_NOT_FOUND', `Course with title "${courseTitle}" does not exist.`);
     }
 
     // 2. Check if the user is already registered for the course.
-    const existingRegistration = db.prepare("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'enrolled'").get(userId, course.id);
+    const existingRegistration = db.prepare(
+      "SELECT * FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'enrolled'"
+    ).get(userId, course.id);
     if (existingRegistration) {
-        throw badRequest('ALREADY_REGISTERED', `You have already registered for ${course.title}.`);
+      throw badRequest('ALREADY_REGISTERED', `You have already registered for ${course.title}.`);
     }
 
     // 3.Check if the user has already completed the course.
-    const completedCourse = db.prepare("SELECT * FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'completed'").get(userId, course.id);
+    const completedCourse = db.prepare(
+      "SELECT * FROM enrollments WHERE user_id = ? AND course_id = ? AND status = 'completed'"
+    ).get(userId, course.id);
     if (completedCourse) {
-        throw badRequest('ALREADY_COMPLETED', `You have already completed ${course.title}.`);
+      throw badRequest('ALREADY_COMPLETED', `You have already completed ${course.title}.`);
     }
 
     // 4. Check if the course is full.
-    const enrollmentCount = db.prepare("SELECT COUNT(*) AS count FROM enrollments WHERE course_id = ? AND status = 'enrolled'").get(course.id).count;
+    const enrollmentCount = db.prepare(
+      "SELECT COUNT(*) AS count FROM enrollments WHERE course_id = ? AND status = 'enrolled'"
+    ).get(course.id).count;
     if (enrollmentCount >= course.capacity) {
-        throw badRequest('COURSE_FULL', `"${course.title}" is full.`);
+      throw badRequest('COURSE_FULL', `"${course.title}" is full.`);
     }
 
     // 5. Check if the user has already registered for 5 courses.
-    const userEnrollmentCount = db.prepare("SELECT COUNT(*) AS count FROM enrollments WHERE user_id = ? AND status = 'enrolled'").get(userId).count;
+    const userEnrollmentCount = db.prepare(
+      "SELECT COUNT(*) AS count FROM enrollments WHERE user_id = ? AND status = 'enrolled'"
+    ).get(userId).count;
     if (userEnrollmentCount >= 5) {
-        throw badRequest('MAX_COURSES_REACHED', `You already registered for the maximum of 5 courses.`);
+      throw badRequest('MAX_COURSES_REACHED', 'You already registered for the maximum of 5 courses.');
     }
 
     // 6. Checks for if the user is trying to register for a course, but they have a time conflict with another course they are already registered for.
-    const conflict = db.prepare(`SELECT c.title FROM enrollments e JOIN courses c ON c.id = e.course_id WHERE e.user_id = ? AND e.status = 'enrolled' AND c.day_of_week = ?   AND c.start_time = ?`)
-    .get(userId, course.day_of_week, course.start_time);
-    if (conflict) {
-        throw badRequest('TIME_CONFLICT', `You have a scheduling conflict with course "${conflict.title}".`);
+    const timeConflict = db.prepare(`
+      SELECT c.title
+      FROM enrollments e
+      JOIN courses c ON c.id = e.course_id
+      WHERE e.user_id = ?
+        AND e.status = 'enrolled'
+        AND c.day_of_week = ?
+        AND c.start_time = ?
+    `).get(userId, course.day_of_week, course.start_time);
+    if (timeConflict) {
+      throw badRequest('TIME_CONFLICT', `You have a scheduling conflict with course "${timeConflict.title}".`);
     }
 
     // 7. Check if the user has completed all prerequisites for the course.
@@ -47,16 +63,18 @@ function register(db, userId, courseTitle) {
       WHERE p.course_id = ? AND e.course_id IS NULL
       LIMIT 1
     `).get(userId, course.id);
-
     if (missingPrerequisite) {
-        throw badRequest(
-            'PREREQUISITE_NOT_MET',
-            `You have not completed the prerequisite course "${missingPrerequisite.title}" for "${course.title}".`
-        );
+      throw badRequest(
+        'PREREQUISITE_NOT_MET',
+        `You have not completed the prerequisite course "${missingPrerequisite.title}" for "${course.title}".`
+      );
     }
 
     // 8. If all checks pass, insert a new enrollment row with status 'enrolled'.
     db.prepare("INSERT INTO enrollments (user_id, course_id, status) VALUES (?, ?, 'enrolled')").run(userId, course.id);
+  });
+
+  registration.immediate();
 }
 
 

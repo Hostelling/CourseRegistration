@@ -33,14 +33,10 @@ function notFound(code, message) {
   return createError(404, code, message);
 }
 
-// Creates an error for conflict resources.
-function conflict(code, message) {
-  return createError(409, code, message);
-}
 
 module.exports = { 
   errorHandler, 
   badRequest, 
   unauthenticated, 
   notFound, 
-  conflict };
+   };

@@ -1,7 +1,6 @@
 const crypto = require('node:crypto');
 const bcrypt = require('bcryptjs');
 const { unauthenticated } = require('./errors');
-const {badRequest, unathenticated } = require('./errors');
 const { requireObjectBody, requireString} = require('./validation');
 const SESSION_COOKIE = 'sid';
 const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;

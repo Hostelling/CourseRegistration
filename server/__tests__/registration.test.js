@@ -117,6 +117,15 @@ describe('refused registrations', () => {
     expectRefused(student, 'Algebra', { status: 400, code: 'COURSE_FULL' });
   });
 
+  test('only one student can register for the last seat', () => {
+    addCourse('Algebra', { capacity: 1 });
+
+    register(db, student, 'Algebra');
+
+    expectRefused(other, 'Algebra', { status: 400, code: 'COURSE_FULL' });
+    expect(enrollmentCount()).toBe(1);
+  });
+
   test('the student cannot enroll in more than five courses', () => {
     for (let index = 0; index < 5; index += 1) {
       const start = `${String(index + 8).padStart(2, '0')}:00`;

@@ -22,18 +22,28 @@ export default function CourseList({ selectedId, onCourseClick }) {
   }, []);
 
   return (
-    <ul className="course-list">
-      {courses.map((course) => (
-        <li key={course.id} className="course-item">
-          <Link
-            to={`/courses/${course.id}`}
-            onClick={onCourseClick}
-            className={`course-link ${String(course.id) === String(selectedId) ? 'selected' : ''}`}
-          >
-            {course.title}
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <>
+      {error && (
+        <p className="error" role="alert">
+          {error}
+        </p>
+      )}
+
+      <ul className="course-list">
+        {courses.map((course) => (
+          <li key={course.id} className="course-item">
+            <Link
+              to={`/courses/${course.id}`}
+              onClick={onCourseClick}
+              className={`course-link ${
+                String(course.id) === String(selectedId) ? 'selected' : ''
+              }`}
+            >
+              {course.title}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

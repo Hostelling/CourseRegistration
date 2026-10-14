@@ -1,7 +1,7 @@
 const Koa = require('koa');
 const Router = require('@koa/router');
 const bodyParser = require('koa-bodyparser');
-const { errorHandler, badRequest, unauthenticated, notFound } = require('./errors');
+const { errorHandler, badRequest, notFound } = require('./errors');
 const auth = require('./auth');
 const registration = require('./registration');
 const { requireObjectBody, requireString, requireCourseId } = require('./validation');
